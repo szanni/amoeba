@@ -731,12 +731,75 @@ void test_cycling() {
     }
 }
 
+void test_delete() {
+    int ret;
+    am_Solver * solver = am_newsolver(NULL, NULL);
+
+    am_Var * xl = am_newvariable(solver);
+    am_Var * xr = am_newvariable(solver);
+    am_Var * xw = am_newvariable(solver);
+    am_Var * xwc = am_newvariable(solver);
+
+    am_Constraint * c1;
+    am_Constraint * c2;
+
+    /* c1: xw == xr -xl */
+    c1 = am_newconstraint(solver, AM_REQUIRED);
+    ret = 0;
+    ret |= am_addterm(c1, xw, 1.0);
+    ret |= am_setrelation(c1, AM_EQUAL);
+    ret |= am_addterm(c1, xr, 1.0);
+    ret |= am_addterm(c1, xl, -1.0);
+    ret |= am_add(c1);
+    assert(ret == AM_OK);
+
+    am_updatevars(solver);
+    printf("xl: %f, xr:%f, xw:%f\n", am_value(xl), am_value(xr), am_value(xw));
+
+    /* c1: xwc == xw */
+    c2 = am_newconstraint(solver, AM_REQUIRED);
+    ret = 0;
+    ret |= am_addterm(c2, xwc, 1.0);
+    ret |= am_setrelation(c2, AM_EQUAL);
+    ret |= am_addterm(c2, xw, 1.0);
+    ret |= am_add(c2);
+    assert(ret == AM_OK);
+
+    /* Sets dirty bit? Related to the crash. */
+    am_suggest(xwc, 10);
+
+    am_updatevars(solver);
+    printf("xl:%f, xr:%f, xw:%f, xwc:%f\n", am_value(xl), am_value(xr), am_value(xw), am_value(xwc));
+
+    /* Remove xwc and c2 */
+    am_deledit(xwc);
+    am_remove(c2);
+    /* Adding an am_updatevars(solver); here somehow solves the issue. */
+    am_delconstraint(c2);
+    am_delvariable(xwc);
+
+    /* Causes crash: amoeba.h:482: am_sym2var: Assertion `ve != NULL' failed. */
+    am_updatevars(solver);
+    printf("xl:%f, xr:%f, xw:%f\n", am_value(xl), am_value(xr), am_value(xw));
+
+    /* Manual cleanup */
+    am_delconstraint(c1);
+    am_remove(c1);
+
+    am_delvariable(xl);
+    am_delvariable(xr);
+    am_delvariable(xw);
+
+    am_delsolver(solver);
+}
+
 int main(void) {
     test_binarytree();
     test_unbounded();
     test_strength();
     test_suggest();
     test_cycling();
+    test_delete();
     test_all();
     return 0;
 }
