@@ -234,7 +234,7 @@ int main()
         am_Num width = size.width;
         am_Num height = size.height;
 
-        ankerl::nanobench::Bench().minEpochIterations(100).run("suggest value " + std::to_string(size.width) + "x" + std::to_string(size.height), [&] {
+        ankerl::nanobench::Bench().minEpochIterations(100000).run("suggest value " + std::to_string(size.width) + "x" + std::to_string(size.height), [&] {
             am_suggest(widthVar, width);
             am_suggest(heightVar, height);
             am_updatevars(S);
